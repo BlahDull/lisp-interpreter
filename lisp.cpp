@@ -43,7 +43,7 @@ class Token {
     private:
         bool contains_number(string input) {
             for (char c : input) {
-                if (!isdigit(c) && c != '.') {
+                if (!isdigit(c) && c != '.' && c != '-') {
                     return false;
                 }
             }
@@ -61,7 +61,21 @@ class Lexer {
                     tokens.push_back(Token(PLUS));
                 }
                 else if (input_str.at(i) == '-') {
-                    tokens.push_back(Token(MINUS));
+                    if (isdigit(input_str.at(i+1))) {
+                        stringstream ss;
+                        string num;
+                        ss << "-";
+                        i++;
+                        while (isdigit(input_str.at(i))) {
+                            ss << input_str.at(i);
+                            i++;
+                        }
+                        i--;
+                        ss >> num;
+                        tokens.push_back(Token(num));
+                    } else {
+                        tokens.push_back(Token(MINUS));
+                    }
                 }
                 else if (input_str.at(i) == '*') {
                     tokens.push_back(Token(MULTIPLY));
