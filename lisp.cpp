@@ -2,6 +2,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <stack>
 #include <cctype>
 #include <unordered_map>
 
@@ -16,12 +17,13 @@ enum Tokens {
     DIVIDE = '/',
     LPAREN = '(',
     RPAREN = ')',
+    TRUE = 'T',
+    FALSE = 'F',
     NOP = '_'
 };
 
-class Variable {
-
-};
+unordered_map<string, float> symbol_table;
+vector<string> keywords = {"set!", "define", "car", "cdr", "cons", "sqrt", "pow", "defun", "if"};
 
 class Token {
     public:
@@ -31,10 +33,11 @@ class Token {
         bool is_number = false;
         bool is_symbol = false;
         bool is_operator = false;
+        bool is_boolean = false;
 
         Token(unsigned char input) {
             token_val = input;
-            is_operator = true;
+            if (input == TRUE || input == FALSE) {is_boolean = true;} else {is_operator = true;}
         }
 
         Token(string input) {
@@ -56,11 +59,15 @@ class Token {
             return true;
         }
 };
-
+// Decimals are incorrectly split into two tokens, for example 2.1 gets turned into '2' and '.1'
 class Lexer {
     public:
         vector<Token> tokens;
         void tokenize(string input_str) {
+            if (!check_parenthesis(input_str)) {
+                cout << "Error: Invalid Parenthesis." << endl;
+                return;
+            }
             for (size_t i = 0; i < input_str.length(); i++) {
                 if (input_str.at(i) == ' ') continue;
                 else if (input_str.at(i) == '+') {
@@ -95,6 +102,9 @@ class Lexer {
                 else if (input_str.at(i) == ')') {
                     tokens.push_back(Token(RPAREN));
                 }
+                else if (input_str.at(i) == 'T' || input_str.at(i) == 'F') {
+                    tokens.push_back(Token(input_str.at(i)));
+                }
                 else if (isdigit(input_str.at(i))) {
                     stringstream ss;
                     string num;
@@ -118,6 +128,26 @@ class Lexer {
                 }
             }
         }
+
+        bool check_parenthesis(string input) {
+            stringstream ss;
+            string parens;
+            for (char c : input) {
+                if (c == LPAREN || c == RPAREN) ss << c;
+            }
+            ss >> parens;
+            if (parens.length() % 2 != 0) return false;
+            stack<char> paren_stack;
+            for (char c : parens) {
+                if (c == LPAREN) {
+                    paren_stack.push(c);
+                } else {
+                    if (paren_stack.empty() || paren_stack.top() != LPAREN) return false;
+                    paren_stack.pop();
+                }
+            }
+            return paren_stack.empty();
+        }
 };
 
 void print_tokens(vector<Token> *tokens) {
@@ -140,16 +170,21 @@ void print_map(unordered_map<string, float> map) {
     }
 }
 
-unordered_map<string, float> symbol_table;
-vector<string> keywords = {"set!", "define", "car", "cdr", "cons", "sqrt", "pow", "defun", "if"};
-
 class Parser {
     public:
         void parse(vector<Token> tokens) {
             while(!tokens.empty()) {
-                string result = parse_expression(&tokens).number_val;
-                if (result.size() == 0) return;
-                cout << truncate_zeros(result) << endl;
+                // string result = parse_expression(&tokens).number_val;
+                // if (result.size() == 0) return;
+                // cout << truncate_zeros(result) << endl;
+                Token result = parse_expression(&tokens);
+                if (result.is_number) {
+                    cout << truncate_zeros(result.number_val) << endl;
+                } else if (result.is_boolean) {
+                    cout << result.token_val << endl;
+                } else if (result.is_symbol) {
+                    cout << result.symbol << endl;
+                }
             }
         }
 
@@ -260,15 +295,23 @@ class Parser {
                         }
 
                         default: {
-                            // redefining variables doesn't work, it keeps the first value
                             if (is_keyword(token.symbol)) {
                                 if (token.symbol == "define") {
                                     token = eat(tokens);
                                     string variable_name = token.symbol;
                                     float variable_value = stof(parse_expression(tokens).number_val);
-                                    cout << variable_name << ": " << variable_value << endl;
-                                    symbol_table.insert(make_pair(variable_name, variable_value));
+                                    //cout << variable_name << ":= " << variable_value << endl;
+                                    symbol_table.insert_or_assign(variable_name, variable_value);
+                                    return Token(variable_name);
                                 }
+
+                                if (token.symbol == "defun") {
+                                    
+                                }
+                            } else if (token.is_number) {
+                                return token;
+                            } else if (token.is_boolean) {
+                                return token;
                             }
                         }
                     }
