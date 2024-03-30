@@ -23,21 +23,21 @@ class Token {
     public:
         unsigned char token_val = NOP;
         string number_val = "";
-        string variable_name = "";
+        string symbol = "";
         bool is_number = false;
-        bool is_varaible = false;
+        bool is_symbol = false;
 
         Token(unsigned char input) {
             token_val = input;
         }
-        
+
         Token(string input) {
             if (contains_number(input)) {
                 number_val = input;
                 is_number = true;
             } else {
-                variable_name = input;
-                is_varaible = true;
+                symbol = input;
+                is_symbol = true;
             }
         }
     private:
@@ -102,28 +102,38 @@ class Lexer {
 
 void print_tokens(vector<Token> *tokens) {
     cout << "[ ";
-    for (Token token : *tokens) {
-        if (!token.is_number) {
+    for (Token token : *tokens) {        vector<string> keywords = {"set!", "define", "car", "cdr", "cons", "sqrt", "pow", "defun", "if"};
+        if (!token.is_number && !token.is_symbol) {
             cout << "'" << token.token_val << "' ";
-        } else {
+        } else  if (token.is_number) {
             cout << "'" << token.number_val << "' ";
+        } else if (token.is_symbol) {
+            cout << "'" << token.symbol << "' ";
         }
     }
     cout << "]" << endl;
 }
+
+void print_map(unordered_map<string, float> map) {
+    for (auto entry : map) {
+        cout << entry.first << ": " << entry.second << endl;
+    }
+}
+
+unordered_map<string, float> symbol_table;
+vector<string> keywords = {"set!", "define", "car", "cdr", "cons", "sqrt", "pow", "defun", "if"};
 
 class Parser {
     public:
         void parse(vector<Token> tokens) {
             while(!tokens.empty()) {
                 string result = parse_expression(&tokens).number_val;
+                if (result.size() == 0) return;
                 cout << truncate_zeros(result) << endl;
             }
         }
 
     private:
-        unordered_map<string, int> symbol_table;
-        vector<string> keywords = {"set!", "define", "car", "cdr", "cons", "sqrt", "pow", "defun", "if"};
 
         Token eat(vector<Token> *vec) {
             Token token = *vec->begin();
@@ -138,7 +148,7 @@ class Parser {
                 Token token = vec->at(1);
                 return token;
             } else {
-                return Token(NOP);
+                return vec->at(0);
             }
         }
 
@@ -218,9 +228,18 @@ class Parser {
                             push(tokens, parse_expression(tokens));
                             break;
                         }
+                        default: {
+                            if (token.symbol == "define") {
+                                token = eat(tokens);
+                                string variable_name = token.symbol;
+                                float variable_value = stof(parse_expression(tokens).number_val);
+                                symbol_table.insert(make_pair(variable_name, variable_value));
+                            }
+                        }
                     }
                 }
             }
+            return Token(NOP);
         }
 
         string truncate_zeros(string str) {
@@ -234,14 +253,13 @@ class Parser {
         }
 };
 
-
 int main()
 {
     string input;
     cout << "Welcome to the Lisp Interpreter. Type in Lisp Commands!" << endl;
     while (1) {
-        //getline(cin, input);
-        input = "(+ (+ (+ 5 3) 2) (- 4 3))";
+        getline(cin, input);
+        //input = "(+ (+ (+ 5 3) 2) (- 4 3))";
         //input = "(/ 20 6 2)";
         if (input == "bye") break;
         Lexer lexer = Lexer();
@@ -249,7 +267,6 @@ int main()
         print_tokens(&lexer.tokens);
         Parser parser = Parser();
         parser.parse(lexer.tokens);
-        break;
     }
     return 0;
 }
