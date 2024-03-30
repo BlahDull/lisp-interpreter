@@ -19,6 +19,10 @@ enum Tokens {
     NOP = '_'
 };
 
+class Variable {
+
+};
+
 class Token {
     public:
         unsigned char token_val = NOP;
@@ -26,9 +30,11 @@ class Token {
         string symbol = "";
         bool is_number = false;
         bool is_symbol = false;
+        bool is_operator = false;
 
         Token(unsigned char input) {
             token_val = input;
+            is_operator = true;
         }
 
         Token(string input) {
@@ -116,7 +122,7 @@ class Lexer {
 
 void print_tokens(vector<Token> *tokens) {
     cout << "[ ";
-    for (Token token : *tokens) {        vector<string> keywords = {"set!", "define", "car", "cdr", "cons", "sqrt", "pow", "defun", "if"};
+    for (Token token : *tokens) {
         if (!token.is_number && !token.is_symbol) {
             cout << "'" << token.token_val << "' ";
         } else  if (token.is_number) {
@@ -154,6 +160,7 @@ class Parser {
             if (!vec->empty()) {
                 vec->erase(vec->begin());
             }
+            //print_tokens(vec);
             return token;
         }
 
@@ -174,6 +181,11 @@ class Parser {
             Token token = eat(tokens);
             if (token.is_number) {
                 return token;
+            } else if (!is_keyword(token.symbol) && token.is_symbol) {
+                //cout << token.symbol << " is not a keyword\n"; 
+                string variable_name = token.symbol;
+                //cout << to_string(symbol_table.at(variable_name)) << endl;
+                return Token(to_string(symbol_table.at(variable_name)));
             }
             if (token.token_val == LPAREN) {
                 while (token.token_val != RPAREN) {
@@ -184,7 +196,7 @@ class Parser {
                             float operand1 = stof(parse_expression(tokens).number_val);
                             float operand2 = stof(parse_expression(tokens).number_val);
                             token = eat(tokens);
-                            if (!token.is_number) {
+                            if (token.token_val == ')') {
                                 return Token(to_string(operand1 + operand2));
                             } else {
                                 push(tokens, token);
@@ -197,7 +209,7 @@ class Parser {
                             float operand1 = stof(parse_expression(tokens).number_val);
                             float operand2 = stof(parse_expression(tokens).number_val);
                             token = eat(tokens);
-                            if (!token.is_number) {
+                            if (token.token_val == ')') {
                                 return Token(to_string(operand1 - operand2));
                             } else {
                                 push(tokens, token);
@@ -210,7 +222,7 @@ class Parser {
                             float operand1 = stof(parse_expression(tokens).number_val);
                             float operand2 = stof(parse_expression(tokens).number_val);
                             token = eat(tokens);
-                            if (!token.is_number) {
+                            if (token.token_val == ')') {
                                 return Token(to_string(operand1 * operand2));
                             } else {
                                 push(tokens, token);
@@ -223,12 +235,12 @@ class Parser {
                             float operand1 = stof(parse_expression(tokens).number_val);
                             float operand2 = stof(parse_expression(tokens).number_val);
                             if (operand2 == 0) {
-                                cout << "Attempted division by 0. Aborting...";
+                                cout << "Attempted division by 0. Aborting..." << endl;
                                 tokens->clear();
                                 return Token(NOP);
                             }
                             token = eat(tokens);
-                            if (!token.is_number) {
+                            if (token.token_val == ')') {
                                 return Token(to_string(operand1 / operand2));
                             } else {
                                 push(tokens, token);
@@ -242,18 +254,34 @@ class Parser {
                             push(tokens, parse_expression(tokens));
                             break;
                         }
+
+                        case RPAREN: {
+                            break;
+                        }
+
                         default: {
-                            if (token.symbol == "define") {
-                                token = eat(tokens);
-                                string variable_name = token.symbol;
-                                float variable_value = stof(parse_expression(tokens).number_val);
-                                symbol_table.insert(make_pair(variable_name, variable_value));
+                            // redefining variables doesn't work, it keeps the first value
+                            if (is_keyword(token.symbol)) {
+                                if (token.symbol == "define") {
+                                    token = eat(tokens);
+                                    string variable_name = token.symbol;
+                                    float variable_value = stof(parse_expression(tokens).number_val);
+                                    cout << variable_name << ": " << variable_value << endl;
+                                    symbol_table.insert(make_pair(variable_name, variable_value));
+                                }
                             }
                         }
                     }
                 }
             }
             return Token(NOP);
+        }
+
+        bool is_keyword(string word) {
+            for (string keyword : keywords) {
+                if (word == keyword) return true;
+            }
+            return false;
         }
 
         string truncate_zeros(string str) {
@@ -272,6 +300,7 @@ int main()
     string input;
     cout << "Welcome to the Lisp Interpreter. Type in Lisp Commands!" << endl;
     while (1) {
+        cout << ">";
         getline(cin, input);
         //input = "(+ (+ (+ 5 3) 2) (- 4 3))";
         //input = "(/ 20 6 2)";
