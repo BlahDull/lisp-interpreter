@@ -1,8 +1,8 @@
-#include "Token.hh"
-#include "TokenStream.hh"
-#include "Lexer.hh"
-#include "Parser.hh"
-#include "libs.hh"
+#include "../headers/Token.hh"
+#include "../headers/TokenStream.hh"
+#include "../headers/Lexer.hh"
+#include "../headers/Parser.hh"
+#include "../headers/libs.hh"
 
 int main() {
     string input;

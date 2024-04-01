@@ -1,4 +1,4 @@
-#include "Parser.hh"
+#include "../headers/Parser.hh"
 
 void Parser::parse(TokenStream tokens) {
     if (tokens.is_empty()) return;

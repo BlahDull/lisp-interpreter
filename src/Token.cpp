@@ -1,4 +1,4 @@
-#include "Token.hh"
+#include "../headers/Token.hh"
 
 Token::Token(unsigned char type) {
     this->is_token = true;

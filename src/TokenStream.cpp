@@ -1,4 +1,4 @@
-#include "TokenStream.hh"
+#include "../headers/TokenStream.hh"
 
 TokenStream::TokenStream(vector<Token> input_tokens) {
     tokens = input_tokens;

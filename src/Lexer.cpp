@@ -1,4 +1,4 @@
-#include "Lexer.hh"
+#include "../headers/Lexer.hh"
 
 TokenStream Lexer::tokenize_input(string input) {
         vector<Token> tokens;
