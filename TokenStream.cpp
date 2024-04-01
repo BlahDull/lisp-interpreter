@@ -5,6 +5,7 @@ TokenStream::TokenStream(vector<Token> input_tokens) {
 }
 
 Token TokenStream::eat(void) {
+        //print_tokens();
         Token token = *tokens.begin();
         if (!tokens.empty()) {
             tokens.erase(tokens.begin());
@@ -21,10 +22,12 @@ void TokenStream::print_tokens(void) {
     cout << "]" << endl;
 }
 
-void TokenStream::push_front(void) {
-
+void TokenStream::push_front(Token token) {
+    tokens.insert(tokens.begin(), token);
 }
 
 void TokenStream::push_back(Token token) {
     tokens.push_back(token);
 }
+
+bool TokenStream::is_empty() {return tokens.empty();}

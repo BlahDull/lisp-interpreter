@@ -2,6 +2,10 @@
 
 TokenStream Lexer::tokenize_input(string input) {
         vector<Token> tokens;
+        if (!check_parenthesis(input)) {
+            puts("ERROR: Invalid Parenthesis");
+            return tokens;
+        }
         for (size_t i = 0; i < input.size(); i++) {
             if (input.at(i) == SPACE) continue;
             else if (input.at(i) == LPAREN) tokens.push_back(Token(LPAREN));
@@ -49,4 +53,17 @@ TokenStream Lexer::tokenize_input(string input) {
             }
         }
         return tokens;
+}
+
+bool Lexer::check_parenthesis(string input) {
+    stack<char> paren_stack;
+    for (char c : input) {
+        if (c == LPAREN) {
+            paren_stack.push(c);
+        } else if (c == RPAREN) {
+            if (paren_stack.empty() || paren_stack.top() != LPAREN) return false;
+            paren_stack.pop();
+        }
+    }
+    return paren_stack.empty();
 }

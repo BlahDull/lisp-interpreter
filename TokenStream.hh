@@ -6,11 +6,12 @@
 class TokenStream {
 public:
     TokenStream(vector<Token> x);
-    void push_front(void);
+    void push_front(Token x);
     Token eat(void);
     void clear(void);
     void print_tokens(void);
     void push_back(Token x);
+    bool is_empty();
 private:
     vector<Token> tokens;
 };

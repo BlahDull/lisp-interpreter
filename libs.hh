@@ -21,6 +21,7 @@ enum Tokens {
     TRUE = 'T',
     FALSE = 'F',
     EMPTY = '_',
+    ERROR = '!',
     LITERAL = 1,
     SYMBOL = 2,
     KEYWORD = 3,

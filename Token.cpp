@@ -7,6 +7,7 @@ Token::Token(unsigned char type) {
 
 Token::Token(string data, unsigned char type) {
     this->data_val = data;
+    this->token_val = EMPTY;
     switch (type) {
         case LITERAL:
             this->is_literal = true;

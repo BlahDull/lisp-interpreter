@@ -14,5 +14,7 @@ int main() {
         Lexer lexer;
         TokenStream tokens = TokenStream(lexer.tokenize_input(input));
         tokens.print_tokens();
+        Parser parser;
+        parser.parse(tokens);
     }
 }

@@ -7,6 +7,8 @@
 class Lexer {
 public:
     TokenStream tokenize_input(string x);
+private:
+    bool check_parenthesis(string x);
 };
 
 #endif
