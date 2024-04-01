@@ -1,2 +1,5 @@
-.exe
+*.exe
+*.out
+*.elf
 build/
+.vscode/
