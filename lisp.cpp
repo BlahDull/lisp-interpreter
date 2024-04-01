@@ -3,12 +3,12 @@
 #include <sstream>
 #include <vector>
 #include <stack>
-#include <cctype>
 #include <unordered_map>
+#include <stdio.h>
 
 using namespace std;
 
-// (+ (+ 3 4) 5)
+#define token_stream vector<Token>
 
 enum Tokens {
     PLUS = '+',
@@ -17,180 +17,165 @@ enum Tokens {
     DIVIDE = '/',
     LPAREN = '(',
     RPAREN = ')',
+    SPACE = ' ',
     TRUE = 'T',
     FALSE = 'F',
-    NOP = '_'
+    EMPTY = '_',
+    LITERAL = 1,
+    SYMBOL = 2,
+    KEYWORD = 3,
+    VARIABLE = 4,
+    FUNCTION = 5,
+    TOKEN = 0
 };
 
-unordered_map<string, float> symbol_table;
+class Symbol {
+    public:
+        string expression = "";
+        bool is_variable = false;
+        bool is_func = false;
+        Symbol(string exp, unsigned char type) {
+            expression = exp;
+            if (isdigit(expression.at(0))) {
+                is_variable = true;
+            } else {
+                is_func = true;
+
+            }
+        }
+};
+
+unordered_map<string, Symbol> symbol_table;
 vector<string> keywords = {"set!", "define", "car", "cdr", "cons", "sqrt", "pow", "defun", "if"};
 
 class Token {
     public:
-        unsigned char token_val = NOP;
-        string number_val = "";
-        string symbol = "";
-        bool is_number = false;
+        unsigned char token_val = EMPTY;
+        string data_val = "";
+        bool is_token = false;
         bool is_symbol = false;
-        bool is_operator = false;
-        bool is_boolean = false;
+        bool is_literal = false;
+        bool is_keyword = false;
 
-        Token(unsigned char input) {
-            token_val = input;
-            if (input == TRUE || input == FALSE) {is_boolean = true;} else {is_operator = true;}
+        Token(unsigned char token) {
+            token_val = token;
+            is_token = true;
         }
 
-        Token(string input) {
-            if (contains_number(input)) {
-                number_val = input;
-                is_number = true;
-            } else {
-                symbol = input;
-                is_symbol = true;
+        Token(string val, unsigned char type) {
+            switch(type) {
+                case LITERAL:
+                    data_val = val;
+                    is_literal = true;
+                    break;
+                case SYMBOL:
+                    data_val = val;
+                    is_symbol = true;
+                    break;
+                case KEYWORD:
+                    data_val = val;
+                    is_keyword = true;
+                    break;
             }
-        }
-    private:
-        bool contains_number(string input) {
-            for (char c : input) {
-                if (!isdigit(c) && c != '.' && c != '-') {
-                    return false;
-                }
-            }
-            return true;
         }
 };
-// Decimals are incorrectly split into two tokens, for example 2.1 gets turned into '2' and '.1'
+
 class Lexer {
     public:
-        vector<Token> tokens;
-        void tokenize(string input_str) {
-            if (!check_parenthesis(input_str)) {
-                cout << "Error: Invalid Parenthesis." << endl;
-                return;
+        token_stream tokenize_input(string input) {
+            token_stream tokens;
+            if (!check_parenthesis(input)) {
+                cout << "ERROR: Invalid Parenthesis" << endl;
+                return tokens;
             }
-            for (size_t i = 0; i < input_str.length(); i++) {
-                if (input_str.at(i) == ' ') continue;
-                else if (input_str.at(i) == '+') {
-                    tokens.push_back(Token(PLUS));
-                }
-                else if (input_str.at(i) == '-') {
-                    if (isdigit(input_str.at(i+1))) {
+            for (size_t i = 0; i < input.size(); i++) {
+                if (input.at(i) == SPACE) continue;
+                else if (input.at(i) == LPAREN) tokens.push_back(Token(LPAREN));
+                else if (input.at(i) == RPAREN) tokens.push_back(Token(RPAREN));
+                else if (input.at(i) == PLUS) tokens.push_back(Token(PLUS));
+                else if (input.at(i) == MULTIPLY) tokens.push_back(Tokens(MULTIPLY));
+                else if (input.at(i) == DIVIDE) tokens.push_back(Tokens(DIVIDE));
+                else if (input.at(i) == MINUS) {
+                    if (input.at(i+1) == SPACE) tokens.push_back(Token(MINUS));
+                    else {
                         stringstream ss;
                         string num;
                         ss << "-";
                         i++;
-                        while (isdigit(input_str.at(i))) {
-                            ss << input_str.at(i);
+                        while (isdigit(input.at(i))) {
+                            ss << input.at(i);
                             i++;
                         }
                         i--;
                         ss >> num;
-                        tokens.push_back(Token(num));
-                    } else {
-                        tokens.push_back(Token(MINUS));
+                        tokens.push_back(Token(num, LITERAL));
                     }
-                }
-                else if (input_str.at(i) == '*') {
-                    tokens.push_back(Token(MULTIPLY));
-                }
-                else if (input_str.at(i) == '/') {
-                    tokens.push_back(Token(DIVIDE));
-                }
-                else if (input_str.at(i) == '(') {
-                    tokens.push_back(Token(LPAREN));
-                }
-                else if (input_str.at(i) == ')') {
-                    tokens.push_back(Token(RPAREN));
-                }
-                else if (input_str.at(i) == 'T' || input_str.at(i) == 'F') {
-                    tokens.push_back(Token(input_str.at(i)));
-                }
-                else if (isdigit(input_str.at(i))) {
+                } else if (isdigit(input.at(i))){
                     stringstream ss;
                     string num;
-                    while (isdigit(input_str.at(i))) {
-                        ss << input_str.at(i);
+                    while (isdigit(input.at(i))) {
+                        ss << input.at(i);
                         i++;
                     }
                     i--;
                     ss >> num;
-                    tokens.push_back(Token(num));
+                    tokens.push_back(Token(num, LITERAL));
                 } else {
                     stringstream ss;
-                    string term;
-                    while (input_str.at(i) != RPAREN && input_str.at(i) != ' ') {
-                        ss << input_str.at(i);
+                    string symbol;
+                    while (input.at(i) != RPAREN && input.at(i) != ' ') {
+                        ss << input.at(i);
                         i++;
                     }
                     i--;
-                    ss >> term;
-                    tokens.push_back(Token(term));
+                    ss >> symbol;
+                    if (in_keywords(symbol)) tokens.push_back(Token(symbol, KEYWORD));
+                    else if (symbol == "T" || symbol == "F") tokens.push_back(Token(symbol, LITERAL));
+                    else tokens.push_back(Token(symbol, SYMBOL));
                 }
             }
+            return tokens;
         }
-
+    private:
         bool check_parenthesis(string input) {
-            stringstream ss;
-            string parens;
-            for (char c : input) {
-                if (c == LPAREN || c == RPAREN) ss << c;
-            }
-            ss >> parens;
-            if (parens.length() % 2 != 0) return false;
             stack<char> paren_stack;
-            for (char c : parens) {
+            for (char c : input) {
                 if (c == LPAREN) {
                     paren_stack.push(c);
-                } else {
+                } else if (c == RPAREN) {
                     if (paren_stack.empty() || paren_stack.top() != LPAREN) return false;
                     paren_stack.pop();
                 }
             }
             return paren_stack.empty();
         }
+
+        bool in_keywords(string symbol) {
+            for (string keyword : keywords) {
+                if (keyword == symbol) return true;
+            }
+            return false;
+        }
+
 };
 
 void print_tokens(vector<Token> *tokens) {
     cout << "[ ";
     for (Token token : *tokens) {
-        if (!token.is_number && !token.is_symbol) {
-            cout << "'" << token.token_val << "' ";
-        } else  if (token.is_number) {
-            cout << "'" << token.number_val << "' ";
-        } else if (token.is_symbol) {
-            cout << "'" << token.symbol << "' ";
-        }
+        if (token.is_token) cout << "'" << token.token_val << "' ";
+        else cout << "'" << token.data_val << "' ";
     }
     cout << "]" << endl;
 }
 
-void print_map(unordered_map<string, float> map) {
-    for (auto entry : map) {
-        cout << entry.first << ": " << entry.second << endl;
-    }
-}
-
 class Parser {
     public:
-        void parse(vector<Token> tokens) {
-            while(!tokens.empty()) {
-                // string result = parse_expression(&tokens).number_val;
-                // if (result.size() == 0) return;
-                // cout << truncate_zeros(result) << endl;
-                Token result = parse_expression(&tokens);
-                if (result.is_number) {
-                    cout << truncate_zeros(result.number_val) << endl;
-                } else if (result.is_boolean) {
-                    cout << result.token_val << endl;
-                } else if (result.is_symbol) {
-                    cout << result.symbol << endl;
-                }
-            }
+        void parse(token_stream tokens) {
+            Token result = parse_expression(&tokens);
+            cout << result.data_val << endl;
         }
-
     private:
-
-        Token eat(vector<Token> *vec) {
+        Token eat(token_stream *vec) {
             Token token = *vec->begin();
             if (!vec->empty()) {
                 vec->erase(vec->begin());
@@ -199,160 +184,172 @@ class Parser {
             return token;
         }
 
-        Token look_ahead(vector<Token> *vec) {
-            if (vec->size() > 1) {
-                Token token = vec->at(1);
-                return token;
-            } else {
-                return vec->at(0);
-            }
-        }
-
         void push(vector<Token> *vec, Token token) {
             vec->insert(vec->begin(), token);
         }
 
-        Token parse_expression(vector<Token> *tokens) {
+        Token define(token_stream *tokens) {
             Token token = eat(tokens);
-            if (token.is_number) {
-                return token;
-            } else if (!is_keyword(token.symbol) && token.is_symbol) {
-                //cout << token.symbol << " is not a keyword\n"; 
-                string variable_name = token.symbol;
-                //cout << to_string(symbol_table.at(variable_name)) << endl;
-                return Token(to_string(symbol_table.at(variable_name)));
+            string name = token.data_val;
+            string value = parse_expression(tokens).data_val;
+            Symbol symbol = Symbol(value, VARIABLE);
+            symbol_table.insert_or_assign(name, symbol);
+            return Token(name, LITERAL);
+        }
+
+        Token defun(token_stream *tokens) {
+            Token token = eat(tokens);
+            string name = token.data_val;
+            string data;
+            stringstream ss;
+            while (tokens->size() != 1){
+                token = eat(tokens);
+                if (token.is_token) ss << token.token_val;
+                else ss << token.data_val;
             }
+            ss >> data;
+            Symbol symbol = Symbol(data, FUNCTION);
+            symbol_table.insert_or_assign(name, symbol);
+            return Token(name, LITERAL);
+        }
+
+        Token exec_func(token_stream *tokens, Token token) {
+            cout << token.data_val << endl;
+            cout << symbol_table.at(token.data_val).expression << endl;
+            return parse_expression(tokens);
+        }
+
+        Token resolve_parameter() {
+
+        }
+
+        // bool in_symbol_table(string name) {
+        //     return (symbol_table.find(name) == symbol_table.end());
+        // }
+
+
+        Token parse_expression(token_stream *tokens) {
+            Token token = eat(tokens);
+            if (token.is_literal) return token;
+            if (token.is_symbol) return Token(symbol_table.at(token.data_val).expression, LITERAL);
             if (token.token_val == LPAREN) {
                 while (token.token_val != RPAREN) {
                     token = eat(tokens);
-                    unsigned char val = token.token_val;
-                    switch (val) {
+                    unsigned char token_val = token.token_val;
+                    switch (token_val) {
                         case PLUS: {
-                            float operand1 = stof(parse_expression(tokens).number_val);
-                            float operand2 = stof(parse_expression(tokens).number_val);
+                            int operand1 = stoi(parse_expression(tokens).data_val);
+                            int operand2 = stoi(parse_expression(tokens).data_val);
                             token = eat(tokens);
-                            if (token.token_val == ')') {
-                                return Token(to_string(operand1 + operand2));
+                            if (token.token_val == RPAREN) {
+                                return Token(to_string(operand1 + operand2), LITERAL);
                             } else {
                                 push(tokens, token);
-                                push(tokens, Token(to_string(operand1 + operand2)));
+                                push(tokens, Token(to_string(operand1 + operand2), LITERAL));
                                 push(tokens, Token(PLUS));
+                                print_tokens(tokens);
                             }
                             break;
                         }
                         case MINUS: {
-                            float operand1 = stof(parse_expression(tokens).number_val);
-                            float operand2 = stof(parse_expression(tokens).number_val);
+                            int operand1 = stoi(parse_expression(tokens).data_val);
+                            int operand2 = stoi(parse_expression(tokens).data_val);
                             token = eat(tokens);
-                            if (token.token_val == ')') {
-                                return Token(to_string(operand1 - operand2));
+                            if (token.token_val == RPAREN) {
+                                return Token(to_string(operand1 - operand2), LITERAL);
                             } else {
                                 push(tokens, token);
-                                push(tokens, Token(to_string(operand1 - operand2)));
+                                push(tokens, Token(to_string(operand1 - operand2), LITERAL));
                                 push(tokens, Token(MINUS));
                             }
                             break;
                         }
                         case MULTIPLY: {
-                            float operand1 = stof(parse_expression(tokens).number_val);
-                            float operand2 = stof(parse_expression(tokens).number_val);
+                            int operand1 = stoi(parse_expression(tokens).data_val);
+                            int operand2 = stoi(parse_expression(tokens).data_val);
                             token = eat(tokens);
-                            if (token.token_val == ')') {
-                                return Token(to_string(operand1 * operand2));
+                            if (token.token_val == RPAREN) {
+                                return Token(to_string(operand1 * operand2), LITERAL);
                             } else {
                                 push(tokens, token);
-                                push(tokens, Token(to_string(operand1 * operand2)));
+                                push(tokens, Token(to_string(operand1 * operand2), LITERAL));
                                 push(tokens, Token(MULTIPLY));
                             }
                             break;
                         }
                         case DIVIDE: {
-                            float operand1 = stof(parse_expression(tokens).number_val);
-                            float operand2 = stof(parse_expression(tokens).number_val);
-                            if (operand2 == 0) {
-                                cout << "Attempted division by 0. Aborting..." << endl;
-                                tokens->clear();
-                                return Token(NOP);
-                            }
+                            int operand1 = stoi(parse_expression(tokens).data_val);
+                            int operand2 = stoi(parse_expression(tokens).data_val);
                             token = eat(tokens);
-                            if (token.token_val == ')') {
-                                return Token(to_string(operand1 / operand2));
+                            if (operand2 == 0) {
+                                cout << "ERROR: Division by 0" << endl;
+                                return Token(EMPTY);
+                            }
+                            if (token.token_val == RPAREN) {
+                                return Token(to_string(operand1 / operand2), LITERAL);
                             } else {
                                 push(tokens, token);
-                                push(tokens, Token(to_string(operand1 / operand2)));
+                                push(tokens, Token(to_string(operand1 / operand2), LITERAL));
                                 push(tokens, Token(DIVIDE));
                             }
                             break;
                         }
-
                         case LPAREN: {
                             push(tokens, parse_expression(tokens));
                             break;
                         }
-
                         case RPAREN: {
                             break;
                         }
-
                         default: {
-                            if (is_keyword(token.symbol)) {
-                                if (token.symbol == "define") {
-                                    token = eat(tokens);
-                                    string variable_name = token.symbol;
-                                    float variable_value = stof(parse_expression(tokens).number_val);
-                                    //cout << variable_name << ":= " << variable_value << endl;
-                                    symbol_table.insert_or_assign(variable_name, variable_value);
-                                    return Token(variable_name);
-                                }
-
-                                if (token.symbol == "defun") {
-                                    
-                                }
-                            } else if (token.is_number) {
-                                return token;
-                            } else if (token.is_boolean) {
-                                return token;
-                            }
+                            if (token.is_literal) return token;
+                            else if (token.is_keyword) {
+                                if (token.data_val == "define") return token = define(tokens);
+                                if (token.data_val == "defun") return token = defun(tokens);
+                            } //else if (token.is_symbol) return Token(symbol_table.at(token.data_val).expression, LITERAL) ;
+                            else return token = exec_func(tokens, token);
                         }
                     }
                 }
             }
-            return Token(NOP);
-        }
-
-        bool is_keyword(string word) {
-            for (string keyword : keywords) {
-                if (word == keyword) return true;
-            }
-            return false;
-        }
-
-        string truncate_zeros(string str) {
-            int index = str.find(".");
-            for (size_t i = index + 1; i < str.size(); i++) {
-                if (str.at(i) != '0') {
-                    return str;
-                }
-            }
-            return str.substr(0, index);
+            //cout << "ERROR: Unknown" << endl;
+            return Token(EMPTY);
         }
 };
 
-int main()
-{
+int main() {
     string input;
     cout << "Welcome to the Lisp Interpreter. Type in Lisp Commands!" << endl;
-    while (1) {
+    input = "(defun mult (a b) (* a b))";
+    // while (1) {
+    //     cout << ">";
+    //     //getline(cin, input);
+    //     if (input == "bye") break;
+    //     Lexer lexer = Lexer();
+    //     token_stream tokens = lexer.tokenize_input(input);
+    //     print_tokens(&tokens);
+    //     Parser parser = Parser();
+    //     parser.parse(tokens);
+    //     input = "(mult (1 2))";
+    // }
+        {
         cout << ">";
-        getline(cin, input);
-        //input = "(+ (+ (+ 5 3) 2) (- 4 3))";
-        //input = "(/ 20 6 2)";
-        if (input == "bye") break;
+        //getline(cin, input);
         Lexer lexer = Lexer();
-        lexer.tokenize(input);
-        print_tokens(&lexer.tokens);
+        token_stream tokens = lexer.tokenize_input(input);
+        print_tokens(&tokens);
         Parser parser = Parser();
-        parser.parse(lexer.tokens);
-    }
+        parser.parse(tokens);
+        cout << ">";
+        }
+        // skip to next thing
+        {
+        input = "(mult (1 2))";
+        Lexer lexer = Lexer();
+        token_stream tokens = lexer.tokenize_input(input);
+        print_tokens(&tokens);
+        Parser parser = Parser();
+        parser.parse(tokens);
+        }
     return 0;
 }
