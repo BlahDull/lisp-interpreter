@@ -170,6 +170,7 @@ void print_tokens(vector<Token> *tokens) {
 class Parser {
     public:
         void parse(token_stream tokens) {
+            if (tokens.empty()) return;
             Token result = parse_expression(&tokens);
             cout << result.data_val << endl;
         }
@@ -197,36 +198,8 @@ class Parser {
         }
 
         Token defun(token_stream *tokens) {
-            Token token = eat(tokens);
-            token = eat(tokens);
-            string name = token.data_val;
-            string formal_parameters;
-            string expression;
-            stringstream ss;
-            token = eat(tokens);
-            token = eat(tokens);
-            while (token.token_val != RPAREN) {
-                ss << token.data_val << " ";
-                token = eat(tokens);
-            }
-            ss >> formal_parameters;
-            ss.clear();
-            token = eat(tokens);
-            while (!tokens->empty()) {
-                if (token.is_token) ss << token.token_val;
-                else ss << token.data_val;
-                eat(tokens);
-            }
-            ss >> expression;
-            cout << "Func Name:" << name << endl;
-            cout << "Formal Params:" << formal_parameters << endl;
-            cout << "Expression:" << expression << endl;
-            return Token(EMPTY);
-        }
 
-        // bool in_symbol_table(string name) {
-        //     return (symbol_table.find(name) == symbol_table.end());
-        // }
+        }
 
 
         Token parse_expression(token_stream *tokens) {
@@ -248,7 +221,6 @@ class Parser {
                                 push(tokens, token);
                                 push(tokens, Token(to_string(operand1 + operand2), LITERAL));
                                 push(tokens, Token(PLUS));
-                                print_tokens(tokens);
                             }
                             break;
                         }
@@ -308,7 +280,6 @@ class Parser {
                                 if (token.data_val == "define") return token = define(tokens);
                                 if (token.data_val == "defun") return token = defun(tokens);
                             } else if (token.is_symbol) return Token(symbol_table.at(token.data_val).expression, LITERAL) ;
-                            
                         }
                     }
                 }
