@@ -1,14 +1,11 @@
 #ifndef Lexer_H
 #define Lexer_H
 #include "libs.hh"
-#include "TokenStream.hh"
-#include "Token.hh"
+#include "InputStream.hh"
 
 class Lexer {
 public:
-    TokenStream tokenize_input(string x);
-private:
-    bool check_parenthesis(string x);
+    InputStream tokenize_input(string x);
 };
 
 #endif

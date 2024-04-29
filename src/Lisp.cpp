@@ -1,20 +1,23 @@
-#include "../headers/Token.hh"
-#include "../headers/TokenStream.hh"
-#include "../headers/Lexer.hh"
-#include "../headers/Parser.hh"
-#include "../headers/libs.hh"
+#include "libs.hh"
+#include "InputStream.hh"
+#include "Lexer.hh"
+#include "Parser.hh"
+#include "EnvironmentContainer.hh"
+
+EnvironmentContainer* EnvironmentContainer::instance = nullptr;
 
 int main() {
     string input;
-    puts("Welcome to the Lisp Interpreter. Type in Lisp Commands!");
+    EnvironmentContainer* container = EnvironmentContainer::getInstance();
+    Lexer lexer;
+    Parser parser;
+    puts("Welcome to the Lisp Interpreter! Type in Lisp Commands. Type (quit) to exit.");
     while (1) {
         cout << ">";
         getline(cin, input);
-        if (input == "bye") break;
-        Lexer lexer;
-        TokenStream tokens = TokenStream(lexer.tokenize_input(input));
-        tokens.print_tokens();
-        Parser parser;
-        parser.parse(tokens);
+        if (input == "(quit)") break;
+        InputStream stream = lexer.tokenize_input(input);
+        //stream.print_tokens();
+        parser.parse_tokens(stream);
     }
 }

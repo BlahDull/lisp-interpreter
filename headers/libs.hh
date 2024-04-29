@@ -6,7 +6,11 @@
 #include <vector>
 #include <stack>
 #include <unordered_map>
+#include <cmath>
 #include <stdio.h>
+#include <regex>
+#include <fstream>
+#include <limits>
 
 using namespace std;
 
@@ -17,15 +21,26 @@ enum Tokens {
     DIVIDE = '/',
     LPAREN = '(',
     RPAREN = ')',
+    QUOTE = '\'',
     SPACE = ' ',
     TRUE = 'T',
-    FALSE = 'F',
+    NIL = '~',
+    LESS_THAN = '<',
+    LESS_THAN_EQUAL = '}',
+    GREATER_THAN = '>',
+    GREATER_THAN_EQUAL = '{',
+    EQUAL = '=',
+    NOT_EQUAL = 'N',
+    NOT = '!',
+    AND = '&',
+    OR = '|',
+    IF = 'I',
     EMPTY = '_',
-    ERROR = '!',
-    LITERAL = 1,
+    ERROR = '%',
+    UNDEFINED = '$',
+    NUMBER = 1,
     SYMBOL = 2,
-    KEYWORD = 3,
-    VARIABLE = 4,
-    FUNCTION = 5,
+    LITERAL = 3,
+    FUNCTION = 4,
     TOKEN = 0
 };
