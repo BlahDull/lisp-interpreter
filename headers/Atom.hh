@@ -1,3 +1,5 @@
+// Header file that contains the Atom class prototype
+
 #ifndef Atom_H
 #define Atom_H
 #include "libs.hh"

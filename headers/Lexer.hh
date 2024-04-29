@@ -1,3 +1,5 @@
+// Header file that contains the InputStream class prototype
+
 #ifndef Lexer_H
 #define Lexer_H
 #include "libs.hh"

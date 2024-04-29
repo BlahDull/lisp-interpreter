@@ -1,3 +1,5 @@
+// Header file that contains the EnvironmentContainer class prototype
+
 #ifndef EnvironmentContainer_H
 #define EnvironmentContainer_H
 #include "libs.hh"

@@ -1,3 +1,5 @@
+// Header file that contains the Environment class prototype
+
 #ifndef Environment_H
 #define Environment_H
 

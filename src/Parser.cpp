@@ -2,6 +2,7 @@
 #include "Lexer.hh"
 #include "EnvironmentContainer.hh"
 
+// Method that will take in an input stream and print out the evaluated result. It will also write the results to the result.txt file
 void Parser::parse_tokens(InputStream stream) {
     if (stream.is_empty()) return;
     Atom result = evaluate(&stream);
@@ -29,6 +30,7 @@ void Parser::parse_tokens(InputStream stream) {
     }
 }
 
+// Method that will check if the input has the proper amount of parenthesis
 bool Parser::check_parenthesis(InputStream stream) {
     stack<unsigned char> parenthesis;
     while (!stream.is_empty()) {
@@ -46,6 +48,7 @@ bool Parser::check_parenthesis(InputStream stream) {
     return parenthesis.empty();
 }
 
+// Method that will evaluate arithmetic expressions
 Atom Parser::eval_arithmetic(Atom atom, InputStream *stream) {
     switch(atom.token_val) {
         case PLUS: {
@@ -89,8 +92,11 @@ Atom Parser::eval_arithmetic(Atom atom, InputStream *stream) {
             break;
         }
     }
+    // Error has occured
+    return Atom(ERROR);
 }
 
+// Method that will create an environment to store the definition of a defined variable
 Atom Parser::define(InputStream *stream) {
     string variable_name = stream->eat().value;
     Atom evaluation = evaluate(stream);
@@ -101,12 +107,14 @@ Atom Parser::define(InputStream *stream) {
     return Atom(LITERAL, variable_name);
 }
 
+// Method that will search through the EnvironmentContainer class for the definition of a symbol
 Atom Parser::search_for_symbol(string symbol_name) {
     EnvironmentContainer* container = EnvironmentContainer::getInstance();
     Atom result = container->lookup(symbol_name);
     return container->lookup(symbol_name);
 }
 
+// Method that will perform the car operation on a list
 Atom Parser::car(InputStream *stream) {
     int open_paren = 0, close_paren = 0, count = 0;
     Atom atom = evaluate(stream);
@@ -123,6 +131,7 @@ Atom Parser::car(InputStream *stream) {
     return Atom(LITERAL, first_element);
 }
 
+// Method that will perform the cdr operation on a list
 Atom Parser::cdr(InputStream *stream) {
     int open_paren = 0, close_paren = 0, count = 0;
     Atom atom = evaluate(stream);
@@ -139,6 +148,7 @@ Atom Parser::cdr(InputStream *stream) {
     return Atom(LITERAL, remainder);
 }
 
+// Method that will evaluate boolean expressions
 Atom Parser::eval_boolean(Atom atom, InputStream *stream) {
     switch (atom.token_val) {
         case LESS_THAN: {
@@ -274,8 +284,11 @@ Atom Parser::eval_boolean(Atom atom, InputStream *stream) {
             break;
         }
     }
+    // Error has occured
+    return Atom(ERROR);
 }
 
+// Helper method that just checks if the atom corresponds to a boolean operation
 bool Parser::check_if_boolean(Atom atom) {
     if (atom.token_val == EQUAL || atom.token_val == NOT || atom.token_val == GREATER_THAN 
     || atom.token_val == LESS_THAN || atom.token_val == TRUE || atom.token_val == NOT_EQUAL
@@ -286,17 +299,20 @@ bool Parser::check_if_boolean(Atom atom) {
     return false;
 }
 
+// Method that will find the square root of the next evaluation in the stream
 Atom Parser::my_sqrt(InputStream *stream) {
     int operand = stoi(evaluate(stream).value);
     return Atom(NUMBER, to_string(sqrt(operand)));
 }
 
+// Method that will find the value of the value of the next evaluation in the stream, to the power of the next next evaluation in the stream
 Atom Parser::my_pow(InputStream *stream) {
     int base = stoi(evaluate(stream).value);
     int power = stoi(evaluate(stream).value);
     return Atom(NUMBER, to_string(pow(base, power)));
 }
 
+// Method that will create a function definition as an Atom and store it in an Environment
 Atom Parser::defun(InputStream *stream) {
     string function_name = stream->eat().value;
     vector<string> formal_parameters;
@@ -324,6 +340,7 @@ Atom Parser::defun(InputStream *stream) {
     return function_def;
 }
 
+// Method that will evaluate a function and return the result as an Atom
 Atom Parser::eval_function(Atom function, InputStream *stream) {
     vector<Atom> actual_parameters;
     while (!stream->is_empty()) {
@@ -342,6 +359,7 @@ Atom Parser::eval_function(Atom function, InputStream *stream) {
     return evaluate(&function_stream);
 }
 
+// Method that will perform the cons operation
 Atom Parser::cons(InputStream *stream) {
     Atom first_element = evaluate(stream);
     Atom second_element = evaluate(stream);
@@ -353,6 +371,7 @@ Atom Parser::cons(InputStream *stream) {
     return Atom(LITERAL, new_list);
 }
 
+// Method that will perform the set operation to redefine an already defined variable
 Atom Parser::set(InputStream *stream) {
     string name = stream->eat().value;
     Atom atom = search_for_symbol(name);
@@ -367,22 +386,31 @@ Atom Parser::set(InputStream *stream) {
     return Atom(SYMBOL, name);
 }
 
+// Main recursive method that will evaluate the InputStream and return the result
 Atom Parser::evaluate(InputStream *stream) {
+    // Getting the first atom in the stream and removing it
     Atom atom = stream->eat();
     // Base case
     if (atom.is_number) return atom;
     // Start evaluating
     if (atom.token_val == LPAREN) {
+        // While the current expression is not done evaluating
         while (atom.token_val != RPAREN) {
+            // Get the next atom in the stream
             atom = stream->eat();
+            // If its an arithmetic operation, send the stream to eval_arithmetic
             if (atom.token_val == PLUS || atom.token_val == MINUS || atom.token_val == MULTIPLY || atom.token_val == DIVIDE) {
                 return eval_arithmetic(atom, stream);
+            // If its a boolean expression, send the stream to eval_boolean
             } else if (check_if_boolean(atom)) {
                 return eval_boolean(atom, stream);
+            // If its a nested statement, evaluate the inner statement first
             } else if (atom.token_val == LPAREN) {
                 return evaluate(stream);
+            // If its a literal number, just return it
             } else if (atom.is_number) {
                 return atom;
+            // If its a symbol, find out if its an operation to be performed, or a symbol whose definition needs to be found
             } else if (atom.is_symbol) {
                 if (atom.value == "define") {
                     return define(stream);
@@ -402,22 +430,31 @@ Atom Parser::evaluate(InputStream *stream) {
                     return atom;
                 } else if (atom.value == "defun") {
                     return defun(stream);
+                // If it is not a predefined operation, then it must either be a variable or a custom function, so search for it
                 } else {
+                    // If the symbol is not a function, it must be a variable, so just find and return the variable definition
                     if (!search_for_symbol(atom.value).is_function){
                         return search_for_symbol(atom.value);
+                    // If the symbol is a function, evaluate it and return the result
                     } else {
                         return eval_function(search_for_symbol(atom.value), stream);
                     }
                 }
+            // If the atom is a literal, just return it as is
             } else if (atom.is_literal) {
                 return atom;
             }
         }
+    // If the atom is a literal, just return it as is
     } else if (atom.is_literal) {
         return atom;
+    // If the atom is a literal boolean, just return it as is
     } else if (atom.token_val == TRUE || atom.token_val == NIL) {
         return atom;
+    // Last check to see if somehow the symbol has some defintion somewhere
     } else {
         return search_for_symbol(atom.value);
     }
+    // Error has occured
+    return Atom(ERROR);
 }

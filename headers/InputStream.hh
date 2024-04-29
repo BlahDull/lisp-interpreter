@@ -1,3 +1,5 @@
+// Header file that contains the InputStream class prototype
+
 #ifndef InputStream_H
 #define InputStream_H
 #include "libs.hh"

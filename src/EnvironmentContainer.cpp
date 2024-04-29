@@ -1,5 +1,6 @@
 #include "../headers/EnvironmentContainer.hh"
 
+// Method to search through the Environments to find the definition of something
 Atom EnvironmentContainer::lookup(string name) {
     auto environment_copy = environments;
     while (!environment_copy.empty()) {
@@ -10,13 +11,16 @@ Atom EnvironmentContainer::lookup(string name) {
             return found_name;
         }
     }
+    // If no definition is found, return an UNDEFINED Atom
     return Atom(UNDEFINED);
 }
 
+// Constructor
 EnvironmentContainer::EnvironmentContainer() {
 
 }
 
+// Constructor to ensure that only one instance of the Environment Container class can be created
 EnvironmentContainer* EnvironmentContainer::getInstance() {
     if (instance == nullptr) {
         instance = new EnvironmentContainer();
@@ -24,6 +28,7 @@ EnvironmentContainer* EnvironmentContainer::getInstance() {
     return instance;
 }
 
+// Method to add another environment to the environment container
 void EnvironmentContainer::push_environment(Environment env) {
     environments.push(env);
 }

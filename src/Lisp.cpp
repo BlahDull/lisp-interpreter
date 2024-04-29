@@ -4,8 +4,10 @@
 #include "Parser.hh"
 #include "EnvironmentContainer.hh"
 
+// Initialzing the Environment Container
 EnvironmentContainer* EnvironmentContainer::instance = nullptr;
 
+// Main loop which will retrieve user input until they enter (quit)
 int main() {
     string input;
     EnvironmentContainer* container = EnvironmentContainer::getInstance();

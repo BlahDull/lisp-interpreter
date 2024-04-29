@@ -1,3 +1,5 @@
+// Header file that contains the Parser class prototype
+
 #ifndef Parser_H
 #define Parser_H
 #include "libs.hh"

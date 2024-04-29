@@ -1,3 +1,5 @@
+// Header file that contains helpful libraries as well as Token definitions
+
 #pragma once
 
 #include <iostream>
@@ -14,6 +16,7 @@
 
 using namespace std;
 
+// Enum that contains the values of different Token/Atom values that the program needs to use
 enum Tokens {
     PLUS = '+',
     MINUS = '-',
